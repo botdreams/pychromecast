@@ -78,7 +78,7 @@ def get_device_status(host):
             uuid = UUID(udn.replace('-', ''))
 
         return DeviceStatus(friendly_name, model_name, manufacturer,
-                            uuid, cast_type)
+                            uuid, cast_type, status.get('mac_address'))
 
     except (requests.exceptions.RequestException, ValueError):
         return None
@@ -86,4 +86,4 @@ def get_device_status(host):
 
 DeviceStatus = namedtuple(
     "DeviceStatus",
-    ["friendly_name", "model_name", "manufacturer", "uuid", "cast_type"])
+    ["friendly_name", "model_name", "manufacturer", "uuid", "cast_type", "mac"])
