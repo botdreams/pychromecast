@@ -35,14 +35,8 @@ def _get_chromecast_from_host(host, tries=None, retry_wait=None, timeout=None,
     # Build device status from the mDNS info, this information is
     # the primary source and the remaining will be fetched
     # later on.
-    ip_address, port, uuid, model_name, mac, friendly_name = host
-    cast_type = CAST_TYPES.get(model_name.lower(),
-                               CAST_TYPE_CHROMECAST)
-    device = DeviceStatus(
-        friendly_name=friendly_name, model_name=model_name,
-        manufacturer=None, uuid=uuid, cast_type=cast_type, mac=mac,
-    )
-    return Chromecast(host=ip_address, port=port, device=device, tries=tries,
+    ip_address, port, uuid, model_name, friendly_name = host
+    return Chromecast(host=ip_address, port=port, device=None, tries=tries,
                       timeout=timeout, retry_wait=retry_wait,
                       blocking=blocking)
 
