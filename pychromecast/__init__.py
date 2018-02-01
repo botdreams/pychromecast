@@ -26,7 +26,7 @@ __version__ = '.'.join(__version_info__)
 IDLE_APP_ID = 'E8C28D3C'
 IGNORE_CEC = []
 # For Python 2.x we need to decode __repr__ Unicode return values to str
-NON_UNICODE_REPR = sys.version_info < (3, )
+NON_UNICODE_REPR = sys.version_info < (3,)
 
 
 def _get_chromecast_from_host(host, tries=None, retry_wait=None, timeout=None,
@@ -35,12 +35,12 @@ def _get_chromecast_from_host(host, tries=None, retry_wait=None, timeout=None,
     # Build device status from the mDNS info, this information is
     # the primary source and the remaining will be fetched
     # later on.
-    ip_address, port, uuid, model_name, friendly_name = host
+    ip_address, port, uuid, model_name, mac, friendly_name = host
     cast_type = CAST_TYPES.get(model_name.lower(),
                                CAST_TYPE_CHROMECAST)
     device = DeviceStatus(
         friendly_name=friendly_name, model_name=model_name,
-        manufacturer=None, uuid=uuid, cast_type=cast_type,
+        manufacturer=None, uuid=uuid, cast_type=cast_type, mac=mac,
     )
     return Chromecast(host=ip_address, port=port, device=device, tries=tries,
                       timeout=timeout, retry_wait=retry_wait,
@@ -155,6 +155,8 @@ class Chromecast(object):
                           dev_status.uuid),
                     cast_type=(device.cast_type or
                                dev_status.cast_type),
+                    mac=(device.mac or
+                         dev_status.mac)
                 )
             else:
                 self.device = device
@@ -195,8 +197,8 @@ class Chromecast(object):
     def ignore_cec(self):
         """ Returns whether the CEC data should be ignored. """
         return self.device is not None and \
-            any([fnmatch.fnmatchcase(self.device.friendly_name, pattern)
-                 for pattern in IGNORE_CEC])
+               any([fnmatch.fnmatchcase(self.device.friendly_name, pattern)
+                    for pattern in IGNORE_CEC])
 
     @property
     def is_idle(self):
