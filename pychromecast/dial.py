@@ -79,6 +79,7 @@ def get_device_status(host):
         if udn:
             uuid = UUID(udn.replace('-', ''))
 
+        CC_SESSION.close()
         return DeviceStatus(friendly_name, model_name, manufacturer,
                             uuid, cast_type, status.get('mac_address'))
 
