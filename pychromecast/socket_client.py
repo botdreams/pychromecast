@@ -8,22 +8,21 @@ Without him this would not have been possible.
 # Pylint does not understand the protobuf objects correctly
 # pylint: disable=no-member
 
+import json
 import logging
 import select
 import socket
 import ssl
-import json
+import sys
 import threading
 import time
 from collections import namedtuple
 from struct import pack, unpack
-import sys
 
-from pychromecast.ResetConnectionException import ResetConnectionException
 from . import cast_channel_pb2
-from .dial import CAST_TYPE_CHROMECAST, CAST_TYPE_AUDIO, CAST_TYPE_GROUP
 from .controllers import BaseController
 from .controllers.media import MediaController
+from .dial import CAST_TYPE_CHROMECAST, CAST_TYPE_AUDIO, CAST_TYPE_GROUP
 from .error import (
     ChromecastConnectionError,
     UnsupportedNamespace,
@@ -118,17 +117,14 @@ def _is_ssl_timeout(exc):
 NetworkAddress = namedtuple('NetworkAddress',
                             ['address', 'port'])
 
-
 ConnectionStatus = namedtuple('ConnectionStatus',
                               ['status', 'address'])
-
 
 CastStatus = namedtuple('CastStatus',
                         ['is_active_input', 'is_stand_by', 'volume_level',
                          'volume_muted', 'app_id', 'display_name',
                          'namespaces', 'session_id', 'transport_id',
                          'status_text'])
-
 
 LaunchFailure = namedtuple('LaunchStatus',
                            ['reason', 'app_id', 'request_id'])
@@ -898,7 +894,7 @@ class ReceiverController(BaseController):
             app_data.get(SESSION_ID),
             app_data.get('transportId'),
             app_data.get('statusText', '')
-            )
+        )
         return status
 
     def _process_get_status(self, data):
