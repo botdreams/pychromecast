@@ -1,2 +1,0 @@
-class ResetConnectionException (BaseException):
-    pass

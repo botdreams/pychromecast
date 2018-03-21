@@ -441,7 +441,6 @@ class SocketClient(threading.Thread):
             self._report_connection_status(
                 ConnectionStatus(CONNECTION_STATUS_LOST,
                                  NetworkAddress(self.host, self.port)))
-            raise ResetConnectionException()
             try:
                 self.initialize_connection()
             except ChromecastConnectionError:
