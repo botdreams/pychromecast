@@ -19,6 +19,7 @@ from collections import namedtuple
 from struct import pack, unpack
 import sys
 
+from pychromecast.ResetConnectionException import ResetConnectionException
 from . import cast_channel_pb2
 from .dial import CAST_TYPE_CHROMECAST, CAST_TYPE_AUDIO, CAST_TYPE_GROUP
 from .controllers import BaseController
@@ -440,7 +441,7 @@ class SocketClient(threading.Thread):
             self._report_connection_status(
                 ConnectionStatus(CONNECTION_STATUS_LOST,
                                  NetworkAddress(self.host, self.port)))
-            raise ConnectionResetError
+            raise ResetConnectionException()
             try:
                 self.initialize_connection()
             except ChromecastConnectionError:
