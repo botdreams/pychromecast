@@ -10,9 +10,6 @@ XML_NS_UPNP_DEVICE = "{urn:schemas-upnp-org:device-1-0}"
 
 FORMAT_BASE_URL = "http://{}:8008"
 
-CC_SESSION = requests.Session()
-CC_SESSION.headers['content-type'] = 'application/json'
-
 # Regular chromecast, supports video/audio
 CAST_TYPE_CHROMECAST = 'cast'
 # Cast Audio device, supports only audio
@@ -31,6 +28,7 @@ CAST_TYPES = {
 
 def reboot(host):
     """ Reboots the chromecast. """
+    CC_SESSION = requests.Session()
     CC_SESSION.post(FORMAT_BASE_URL.format(host) + "/setup/reboot",
                     data='{"params":"now"}', timeout=10)
 
@@ -44,6 +42,10 @@ def get_device_status(host):
     """
 
     try:
+
+        CC_SESSION = requests.Session()
+        CC_SESSION.headers['content-type'] = 'application/json'
+
         req = CC_SESSION.get(
             FORMAT_BASE_URL.format(host) + "/setup/eureka_info?options=detail",
             timeout=10)
