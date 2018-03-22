@@ -260,7 +260,7 @@ class SocketClient(threading.Thread):
                     self.logger.error(
                         "Failed to connect: %s. aborting due to stop signal.",
                         err)
-                    raise ChromecastConnectionError("Failed to connect")
+                    raise ChromecastConnectionError("Failed to connect " + str(err))
 
                 self._report_connection_status(
                     ConnectionStatus(CONNECTION_STATUS_FAILED,
@@ -278,7 +278,7 @@ class SocketClient(threading.Thread):
         else:
             self.stop.set()
             self.logger.error("Failed to connect. No retries.")
-            raise ChromecastConnectionError("Failed to connect")
+            raise ChromecastConnectionError("Failed to connect. No retries.")
 
     def disconnect(self):
         """ Disconnect socket connection to Chromecast device """
