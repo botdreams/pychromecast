@@ -3,6 +3,7 @@ PyChromecast: remote control your Chromecast
 """
 import logging
 import fnmatch
+import sys
 
 # pylint: disable=wildcard-import
 import threading
