@@ -2,6 +2,8 @@
 Provides a controller for controlling the default media players
 on the Chromecast.
 """
+from datetime import datetime
+
 from collections import namedtuple
 import threading
 
@@ -67,6 +69,17 @@ class MediaStatus(object):
         self.media_metadata = {}
         self.subtitle_tracks = {}
         self.current_subtitle_tracks = []
+        self.last_updated = None
+
+    @property
+    def adjusted_current_time(self):
+        """ Returns calculated current seek time of media in seconds """
+        if self.player_state == MEDIA_PLAYER_STATE_PLAYING:
+            # Add time since last update
+            return (self.current_time +
+                    (datetime.utcnow() - self.last_updated).total_seconds())
+        # Not playing, return last reported seek time
+        return self.current_time
 
     @property
     def metadata_type(self):
@@ -232,6 +245,7 @@ class MediaStatus(object):
         self.subtitle_tracks = media_data.get('tracks', self.subtitle_tracks)
         self.current_subtitle_tracks = status_data.get(
             'activeTrackIds', self.current_subtitle_tracks)
+        self.last_updated = datetime.utcnow()
 
     def __repr__(self):
         info = {
@@ -453,6 +467,7 @@ class MediaController(BaseController):
         Docs:
         https://developers.google.com/cast/docs/reference/messages#MediaData
         """
+        # pylint: disable=too-many-locals
         def app_launched_callback():
             """Plays media after chromecast has switched to requested app."""
             self._send_start_play_media(
@@ -470,7 +485,7 @@ class MediaController(BaseController):
                                metadata=None, subtitles=None,
                                subtitles_lang='en-US',
                                subtitles_mime='text/vtt', subtitle_id=1):
-
+        # pylint: disable=too-many-locals
         msg = {
             'media': {
                 'contentId': url,

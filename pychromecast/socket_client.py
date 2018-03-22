@@ -8,6 +8,7 @@ Without him this would not have been possible.
 # Pylint does not understand the protobuf objects correctly
 # pylint: disable=no-member
 
+import errno
 import json
 import logging
 import select
@@ -235,9 +236,8 @@ class SocketClient(threading.Thread):
 
         while not self.stop.is_set() and (tries is None or tries > 0):
             try:
-                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.socket = new_socket()
                 self.socket.settimeout(self.timeout)
-                self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 self._report_connection_status(
                     ConnectionStatus(CONNECTION_STATUS_CONNECTING,
                                      NetworkAddress(self.host, self.port)))
@@ -254,9 +254,7 @@ class SocketClient(threading.Thread):
 
                 self.logger.debug("Connected!")
                 break
-            # socket.error is a deprecated alias of OSError in Python 3.3+,
-            # can be removed when Python 2.x support is dropped
-            except (OSError, socket.error) as err:
+            except OSError as err:
                 self.connecting = True
                 if self.stop.is_set():
                     self.logger.error(
@@ -269,11 +267,10 @@ class SocketClient(threading.Thread):
                                      NetworkAddress(self.host, self.port)))
 
                 # Only sleep if we have another retry remaining
-                if tries and tries > 1:
+                if tries is None or tries > 1:
                     retry_log_fun("Failed to connect, retrying in %.1fs",
                                   self.retry_wait)
                     retry_log_fun = self.logger.debug
-
                     time.sleep(self.retry_wait)
 
                 if tries:
@@ -298,7 +295,7 @@ class SocketClient(threading.Thread):
         new_channel = self.destination_id != cast_status.transport_id
 
         if new_channel:
-            self._disconnect_channel(self.destination_id)
+            self.disconnect_channel(self.destination_id)
 
         self.app_namespaces = cast_status.namespaces
         self.destination_id = cast_status.transport_id
@@ -352,7 +349,7 @@ class SocketClient(threading.Thread):
         Use run_once() in your own main loop after you
         receive something on the socket (get_socket()).
         """
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches, too-many-return-statements
 
         try:
             if not self._check_connection():
@@ -407,6 +404,8 @@ class SocketClient(threading.Thread):
                 event.set()
                 if function:
                     function(data)
+
+        return 0
 
     def get_socket(self):
         """
@@ -467,8 +466,8 @@ class SocketClient(threading.Thread):
                             _message_to_string(message, data))
             except Exception:  # pylint: disable=broad-except
                 self.logger.exception(
-                    (u"Exception caught while sending message to "
-                     u"controller %s: %s"),
+                    ("Exception caught while sending message to "
+                     "controller %s: %s"),
                     type(self._handlers[message.namespace]).__name__,
                     _message_to_string(message, data))
 
@@ -481,7 +480,7 @@ class SocketClient(threading.Thread):
         """ Cleanup open channels and handlers """
         for channel in self._open_channels:
             try:
-                self._disconnect_channel(channel)
+                self.disconnect_channel(channel)
             except Exception:  # pylint: disable=broad-except
                 pass
 
@@ -644,7 +643,7 @@ class SocketClient(threading.Thread):
                      'connectionType': 1}},
                 no_add_request_id=True)
 
-    def _disconnect_channel(self, destination_id):
+    def disconnect_channel(self, destination_id):
         """ Disconnect a channel with destination_id. """
         if destination_id in self._open_channels:
             self.send_message(
@@ -679,7 +678,11 @@ class ConnectionController(BaseController):
             return True
 
         if data[MESSAGE_TYPE] == TYPE_CLOSE:
-            self._socket_client.handle_channel_disconnected()
+            # The cast device is asking us to acknowledge closing this channel.
+            self._socket_client.disconnect_channel(message.source_id)
+
+            # Schedule a status update so that a channel is created.
+            self._socket_client.receiver_controller.update_status()
 
             return True
 
@@ -966,3 +969,29 @@ class ReceiverController(BaseController):
         self._report_status()
 
         self._status_listeners[:] = []
+
+
+def new_socket():
+    """
+    Create a new socket with OS-specific parameters
+
+    Try to set SO_REUSEPORT for BSD-flavored systems if it's an option.
+    Catches errors if not.
+    """
+    new_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    new_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    try:
+        # noinspection PyUnresolvedReferences
+        reuseport = socket.SO_REUSEPORT
+    except AttributeError:
+        pass
+    else:
+        try:
+            new_sock.setsockopt(socket.SOL_SOCKET, reuseport, 1)
+        except (OSError, socket.error) as err:
+            # OSError on python 3, socket.error on python 2
+            if err.errno != errno.ENOPROTOOPT:
+                raise
+
+    return new_sock
