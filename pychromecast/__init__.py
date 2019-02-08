@@ -27,7 +27,7 @@ IGNORE_CEC = []
 NON_UNICODE_REPR = sys.version_info < (3,)
 
 
-def _get_chromecast_from_host(host, tries=None, retry_wait=None, timeout=None,
+def get_chromecast_from_host(host, tries=None, retry_wait=None, timeout=None,
                               blocking=True):
     """Creates a Chromecast object from a zeroconf host."""
     # Build device status from the mDNS info, this information is
